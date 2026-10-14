@@ -57,34 +57,14 @@ func run() int {
 
 	slog.Info("Database initialized")
 
-	var (
-		appCache   service.Cache
-		asyncCache *cache.AsyncCache
-	)
+	redisCache := cache.NewRedis(ctx, cfg.Cache.RedisAddrs, cfg.Cache.RedisMasterName, cfg.Cache.RedisPassword, cfg.Cache.CacheTTL)
+	defer func() {
+		if err := redisCache.Close(); err != nil {
+			slog.Error("failed to close cache", "err", err)
+		}
+	}()
 
-	redisCache, err := cache.NewRedis(ctx, cfg.Cache.RedisAddrs, cfg.Cache.RedisMasterName, cfg.Cache.RedisPassword, cfg.Cache.CacheTTL)
-	if err != nil {
-		slog.Warn("Failed to connect to a cache, fallback to only database pattern", "err", err)
-		appCache = cache.NewFake()
-	} else {
-		asyncCache = cache.NewAsync(redisCache, cfg.App.ChanBuffer)
-		asyncCache.StartAsync(cfg.App.WorkersCount)
-		appCache = asyncCache
-		defer func() {
-			appShutdownCtx, appCancel := context.WithTimeout(context.Background(), cfg.App.ShutdownTimeout)
-			defer appCancel()
-
-			if asyncCache != nil {
-				if err := asyncCache.Stop(appShutdownCtx); err != nil {
-					slog.Error("failed to shutdown async cache workers", "err", err)
-				}
-			}
-
-			if err := redisCache.Close(); err != nil {
-				slog.Error("failed to close redis connection", "err", err)
-			}
-		}()
-	}
+	appCache := service.Cache(redisCache)
 
 	slog.Info("Cache initialized")
 

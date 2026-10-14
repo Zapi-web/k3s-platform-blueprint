@@ -48,7 +48,7 @@ func (s *Service) Create(ctx context.Context, longURL string, userID uint64) (st
 	if longURL == "" {
 		return "", domain.ErrInputisEmpty
 	}
-	if userID <= 0 {
+	if userID == 0 {
 		return "", domain.ErrInvalidInput
 	}
 
@@ -98,20 +98,23 @@ func (s *Service) Get(ctx context.Context, shortURL string) (string, error) {
 	}
 
 	getCacheCtx, getCancel := context.WithTimeout(ctx, 1*time.Second)
+	defer getCancel()
 	res, err := s.cache.Get(getCacheCtx, shortURL)
-	getCancel()
 
 	if err == nil {
 		slog.DebugContext(ctx, "retrieved url from cache", "key", shortURL)
-		s.metrics.IncTotalCacheRequest("hit")
+		s.metrics.IncTotalCacheRequest(domain.CacheHit)
 		return res, nil
 	}
 
-	if errors.Is(err, domain.ErrUrlNotFound) {
-		s.metrics.IncTotalCacheRequest("miss")
-	} else {
+	switch {
+	case errors.Is(err, domain.ErrUrlNotFound):
+		s.metrics.IncTotalCacheRequest(domain.CacheMiss)
+	case errors.Is(err, domain.ErrCacheUnavailable):
+		s.metrics.IncTotalCacheRequest(domain.CacheUnavailable)
+	default:
 		slog.WarnContext(ctx, "cache lookup failed, falling back to database", "key", shortURL, "err", err)
-		s.metrics.IncTotalCacheRequest("error")
+		s.metrics.IncTotalCacheRequest(domain.CacheError)
 	}
 
 	decodedID, err := s.encoder.Decode(shortURL)
@@ -141,24 +144,23 @@ func (s *Service) Get(ctx context.Context, shortURL string) (string, error) {
 
 	s.cacheSet(ctx, shortURL, url.LongURL)
 
-	s.metrics.IncUrlsCreated()
-
 	return url.LongURL, nil
 }
 
 func (s *Service) cacheSet(ctx context.Context, key, value string) {
-	err := s.cache.Set(ctx, key, value)
+	cacheCtx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
+	defer cancel()
+	err := s.cache.Set(cacheCtx, key, value)
 
 	if err != nil {
 		switch {
-		case errors.Is(err, domain.ErrQueueClosed):
-			slog.DebugContext(ctx, "queue is closed, dropping the key-value")
-		case errors.Is(err, domain.ErrQueueFull):
-			slog.WarnContext(ctx, "queue is full, can't send a key-value to cache")
+		case errors.Is(err, domain.ErrCacheUnavailable):
+			s.metrics.IncTotalCacheRequest(domain.CacheUnavailable)
 		default:
 			slog.ErrorContext(ctx, "unknown error occurred when sending key-value to cache", "err", err)
+			s.metrics.IncTotalCacheRequest(domain.CacheError)
 		}
 	} else {
-		slog.DebugContext(ctx, "send key-value to queue", "key", key)
+		slog.DebugContext(ctx, "set key in cache", "key", key)
 	}
 }

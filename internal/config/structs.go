@@ -15,9 +15,6 @@ type AppConfig struct {
 	Environment     string        `env:"ENVIRONMENT" env-default:"test"`
 	MetricsEnable   bool          `env:"ENABLE_METRICS" env-default:"false"`
 	LogLevel        string        `env:"LOG_LEVEL" env-default:"info"`
-	ShutdownTimeout time.Duration `env:"APP_SHUTDOWN_TIMEOUT" env-default:"3s"`
-	WorkersCount    int           `env:"WORKERS_COUNT" env-default:"5"`
-	ChanBuffer      int           `env:"CHAN_BUFFER" env-default:"1000"`
 }
 
 type ServerConfig struct {
