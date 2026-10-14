@@ -21,14 +21,14 @@ export const options = {
 export default function() {
     const payload = JSON.stringify({
         url: "https://google.com",
-        user_id: 1 
+        user_id: 1
     });
-    
+
     const params = {
         headers: { 'Content-Type': 'application/json' },
         tags: { name: 'PostCreateLink' }
     };
-    
+
     const postRes = http.post(`${BASE_URL}/api/v1/`, payload, params);
 
     const isPostOk = check(postRes, {
@@ -51,11 +51,11 @@ export default function() {
 
             check(getRes, {
                 'GET short link received (302)': (r) => r.status === 302,
-                'Redirect location is Google': (r) => 
-                    r.headers['Location'] === 'https://google.com' || 
+                'Redirect location is Google': (r) =>
+                    r.headers['Location'] === 'https://google.com' ||
                     r.headers['location'] === 'https://google.com',
             });
-        }    
+        }
     }
 
     sleep(0.05);

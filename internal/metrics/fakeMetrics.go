@@ -2,6 +2,8 @@ package metrics
 
 import (
 	"time"
+
+	"github.com/Zapi-web/url-shortener/internal/domain"
 )
 
 type FakeMetrics struct{}
@@ -15,5 +17,5 @@ func (m *FakeMetrics) ObserveRequestDuration(handler string, status int, duratio
 func (m *FakeMetrics) IncUrlsCreated()                                                           {}
 func (m *FakeMetrics) IncInFlight(handler string)                                                {}
 func (m *FakeMetrics) DecInFlight(handler string)                                                {}
-func (m *FakeMetrics) IncTotalCacheRequest(cacheStatus string)                                   {}
+func (m *FakeMetrics) IncTotalCacheRequest(domain.CacheStatus)                                   {}
 func (m *FakeMetrics) ObserveQueryDuration(handler string, duration time.Duration)               {}

@@ -69,12 +69,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.labels['apps.kubernetes.io/pod-index']
-        - name: WORKERS_COUNT
-          value: {{ .Values.workersCount | default "5" | quote}}
-        - name: CHAN_BUFFER
-          value: {{ .Values.chanBuffer | default "1000" | quote}}
-        - name: APP_SHUTDOWN_TIMEOUT
-          value: {{ .Values.shutdownTimeout | default "5s" | quote}}
         - name: HTTP_READ_TIMEOUT
           value: {{ .Values.server.readTimeout | default "5s" | quote }}
         - name: HTTP_WRITE_TIMEOUT

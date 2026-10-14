@@ -16,11 +16,11 @@ An app example written by myself: a **URL-shortener** that automatically generat
 
 ## Features of App
 * **Snowflake & Base62 Encoding**: Fast, collision-free short ID generation with $O(1)$ memory encoding.
-* **Caching Layer**: Redis cache with automatic fallback to `fakeCache` if Redis is unreachable.
+* **Caching Layer**: Redis write-through cache. If Redis is unreachable the app degrades to DB-only mode and returns to the cache automatically when Redis comes back no restart.
 * **PostgreSQL Storage**: Indexed on `expired_at` for efficient database cleanup routines.
 * **Observability**: Built-in VictoriaMetrics integration tracking request counts, latencies, and cache stats.
 * **12-Factor App**: Gives the opportunity to customize almost all parameters in the app
-* **Cache WaitGroup**: async adding to cache through the `Worker Pool` pattern in Go code
+* **Read-after-write consistency**: the cache is populated synchronously on create, so a GET immediately after POST never falls through to the database.
 
 ## Tech Stack
 * **Go 1.26+**

@@ -79,14 +79,14 @@ func (m *mockKGS) Generate() uint64 {
 }
 
 type mockMetrics struct {
-	incTotalCacheRequestFunc func(cacheStatus string)
+	incTotalCacheRequestFunc func(cacheStatus domain.CacheStatus)
 	observeQueryDurationFunc func(handler string, duration time.Duration)
 	incUrlsCreated           func()
 	incInFlight              func(handler string)
 	decInFlight              func(handler string)
 }
 
-func (m *mockMetrics) IncTotalCacheRequest(cacheStatus string) {
+func (m *mockMetrics) IncTotalCacheRequest(cacheStatus domain.CacheStatus) {
 	if m.incTotalCacheRequestFunc != nil {
 		m.incTotalCacheRequestFunc(cacheStatus)
 	}

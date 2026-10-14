@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/VictoriaMetrics/metrics"
+	"github.com/Zapi-web/url-shortener/internal/domain"
 )
 
 type VictoriaMetrics struct{}
@@ -38,7 +39,7 @@ func (m *VictoriaMetrics) ObserveRequestDuration(handler string, status int, dur
 	metrics.GetOrCreateHistogram(name).Update(duration.Seconds())
 }
 
-func (m *VictoriaMetrics) IncTotalCacheRequest(cacheStatus string) { // miss or hit
+func (m *VictoriaMetrics) IncTotalCacheRequest(cacheStatus domain.CacheStatus) { // miss,hit,error,unavailable
 	name := fmt.Sprintf(`cache_requests_total{cache_status="%s"}`, cacheStatus)
 	metrics.GetOrCreateCounter(name).Inc()
 }
