@@ -6,7 +6,7 @@ service:
   port: 80
 
 image:
-  repository: ghcr.io/zapi-web/url-shortener
+  repository: ghcr.io/zapi-web/k3s-platform-blueprint
   tag: latest
   pullPolicy: IfNotPresent
 

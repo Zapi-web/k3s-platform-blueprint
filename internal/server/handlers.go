@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"net/url"
 
 	"github.com/Zapi-web/url-shortener/internal/domain"
 )
@@ -42,9 +43,19 @@ func (h *Handlers) ServeSaveUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	parsedURL, err := url.ParseRequestURI(req.LongURL)
+	if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") || parsedURL.Host == "" {
+		http.Error(w, "invalid url format", http.StatusBadRequest)
+		return
+	}
+
 	shortURL, err := h.shortener.Create(r.Context(), req.LongURL, req.UserID)
 
 	if err != nil {
+		if errors.Is(err, domain.ErrInvalidInput) || errors.Is(err, domain.ErrInputisEmpty) {
+			http.Error(w, "invalid input", http.StatusBadRequest)
+			return
+		}
 		slog.ErrorContext(r.Context(), "failed to create short url", "user_id", req.UserID, "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -73,10 +84,13 @@ func (h *Handlers) ServeGetURL(w http.ResponseWriter, r *http.Request) {
 	longURL, err := h.shortener.Get(r.Context(), shortURL)
 
 	if err != nil {
-		if errors.Is(err, domain.ErrUrlNotFound) {
+		switch {
+		case errors.Is(err, domain.ErrUrlNotFound):
 			slog.DebugContext(r.Context(), "requested url not found", "short_url", shortURL)
 			http.Error(w, "not found", http.StatusNotFound)
 			return
+		case errors.Is(err, domain.ErrInvalidInput):
+			http.Error(w, "invalid input", http.StatusBadRequest)
 		}
 
 		slog.ErrorContext(r.Context(), "failed to retrieve url", "short_url", shortURL, "err", err)

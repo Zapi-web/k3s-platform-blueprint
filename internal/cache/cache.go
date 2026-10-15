@@ -15,9 +15,10 @@ import (
 )
 
 type Redis struct {
-	rdb   redis.UniversalClient
-	ttl   time.Duration
-	ready atomic.Bool
+	rdb        redis.UniversalClient
+	ttl        time.Duration
+	ready      atomic.Bool
+	stopHealth context.CancelFunc
 }
 
 type redisLogger struct{}
@@ -36,28 +37,34 @@ func NewRedis(ctx context.Context, addrs []string, masterName string, password s
 		SentinelPassword: password,
 	})
 
+	healthCtx, healthCancel := context.WithCancel(context.WithoutCancel(ctx))
+
 	c := &Redis{
-		ttl: ttl,
-		rdb: rdb,
+		ttl:        ttl,
+		rdb:        rdb,
+		stopHealth: healthCancel,
 	}
+
+	setLogger.Do(func() { redis.SetLogger(redisLogger{}) })
 
 	if err := redisotel.InstrumentTracing(rdb); err != nil {
 		slog.WarnContext(ctx, "failed to initialize tracer in redis, continuing without it", "err", err)
 	}
 
-	if err := rdb.Ping(ctx).Err(); err != nil {
+	pingCtx, cancel := context.WithTimeout(ctx, 300*time.Millisecond)
+	defer cancel()
+
+	if err := rdb.Ping(pingCtx).Err(); err != nil {
 		slog.WarnContext(ctx, "redis is not reachable, keep trying", "err", err)
 	} else {
 		c.ready.Store(true)
 	}
 
-	setLogger.Do(func() { redis.SetLogger(redisLogger{}) })
-
-	go c.healthloop(ctx)
+	go c.healthloop(healthCtx)
 	return c
 }
 
-func (c *Redis) healthloop(ctx context.Context) {
+func (r *Redis) healthloop(ctx context.Context) {
 	t := time.NewTicker(2 * time.Second)
 	defer t.Stop()
 
@@ -68,20 +75,20 @@ func (c *Redis) healthloop(ctx context.Context) {
 			return
 		case <-t.C:
 			pingCtx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
-			defer cancel()
-			err := c.rdb.Ping(pingCtx).Err()
+			err := r.rdb.Ping(pingCtx).Err()
+			cancel()
 			if err == nil {
 				fails = 0
 				ok++
-				if ok >= 2 && !c.ready.Load() {
-					c.ready.Store(true)
+				if ok >= 2 && !r.ready.Load() {
+					r.ready.Store(true)
 					slog.InfoContext(ctx, "redis is available, enabling cache")
 				}
 			} else {
 				ok = 0
 				fails++
-				if fails >= 3 && c.ready.Load() {
-					c.ready.Store(false)
+				if fails >= 3 && r.ready.Load() {
+					r.ready.Store(false)
 					slog.ErrorContext(ctx, "redis is unreachable, degraded to db-only mode", "err", err)
 				}
 			}
@@ -128,5 +135,6 @@ func (r *Redis) Get(ctx context.Context, shortURL string) (string, error) {
 }
 
 func (r *Redis) Close() error {
+	r.stopHealth()
 	return r.rdb.Close()
 }
