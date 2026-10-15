@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/sync/singleflight"
 )
 
 type Service struct {
@@ -22,6 +23,7 @@ type Service struct {
 	metrics    Metrics
 	tracer     trace.Tracer
 	defaultTTL time.Duration
+	group      singleflight.Group
 }
 
 func New(db Database, cache Cache, kgs KGS, encoder Encoder, metrics Metrics, ttl time.Duration) *Service {
@@ -97,7 +99,13 @@ func (s *Service) Get(ctx context.Context, shortURL string) (string, error) {
 		return "", domain.ErrInputisEmpty
 	}
 
-	getCacheCtx, getCancel := context.WithTimeout(ctx, 1*time.Second)
+	decodedID, err := s.encoder.Decode(shortURL)
+
+	if err != nil {
+		return "", domain.ErrInvalidInput
+	}
+
+	getCacheCtx, getCancel := context.WithTimeout(ctx, 200*time.Millisecond)
 	defer getCancel()
 	res, err := s.cache.Get(getCacheCtx, shortURL)
 
@@ -117,16 +125,16 @@ func (s *Service) Get(ctx context.Context, shortURL string) (string, error) {
 		s.metrics.IncTotalCacheRequest(domain.CacheError)
 	}
 
-	decodedID, err := s.encoder.Decode(shortURL)
-
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return "", fmt.Errorf("failed to decode short url: %w", err)
-	}
-
 	start := time.Now()
-	url, err := s.database.Get(ctx, decodedID)
+
+	dbRes, err, _ := s.group.Do(shortURL, func() (any, error) {
+		dbCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 1*time.Second)
+		defer cancel()
+
+		return s.database.Get(dbCtx, decodedID)
+	})
+
+	s.metrics.ObserveQueryDuration("get", time.Since(start))
 
 	if err != nil {
 		if errors.Is(err, domain.ErrUrlNotFound) {
@@ -140,7 +148,10 @@ func (s *Service) Get(ctx context.Context, shortURL string) (string, error) {
 		return "", fmt.Errorf("failed to find short url in database: %w", err)
 	}
 
-	s.metrics.ObserveQueryDuration("get", time.Since(start))
+	url, ok := dbRes.(domain.URL)
+	if !ok {
+		return "", fmt.Errorf("unexpected type %T received from database", dbRes)
+	}
 
 	s.cacheSet(ctx, shortURL, url.LongURL)
 
