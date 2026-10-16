@@ -105,9 +105,9 @@ Tested on an AWS k3s Cluster (3 nodes) with **1,000 concurrent VUs** over 5 minu
 
 | Architecture | Throughput | p(95) POST | p(95) GET | Median Latency | Success Rate |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **3x t4g.medium** (ARM Graviton2) | 1,617 req/s | 674.78 ms | 674.78 ms | 267.93 ms | 100% |
-| **3x m7g.large** (ARM Graviton3) | 2,794 req/s | 353.82 ms | 277.42 ms | 103.52 ms | 99.88% |
-| **3x m7a.large** (AMD Zen 4) | **3,206 req/s** | **289.35 ms** | **235.16 ms** | **87.81 ms** | **99.87%** |
+| **3x t4g.medium** (ARM Graviton2) | 1,611 req/s | 629.67 ms | 571.24 ms | 278.70 ms | 99.71% |
+| **3x m7g.large** (ARM Graviton3) | 2,864 req/s | 335.57 ms | 307.28 ms | 141.87 ms | 99.87% |
+| **3x m7a.large** (AMD Zen 4) | **3,744 req/s** | **283.00 ms** | **243.32 ms** | **123.96 ms** | **100%** |
 
 * Detailed test logs can be found in the `k6/` directory
 

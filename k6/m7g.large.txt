@@ -1,10 +1,10 @@
-❯ BASE_URL="http://url-shortener-test-lb-1267944462.eu-central-1.elb.amazonaws.com" k6 run script.js
+ubuntu@ip-10-0-1-122:~$ k6 run script.js
 
-         /\      Grafana   /‾‾/  
-    /\  /  \     |\  __   /  /   
-   /  \/    \    | |/ /  /   ‾‾\ 
+         /\      Grafana   /‾‾/
+    /\  /  \     |\  __   /  /
+   /  \/    \    | |/ /  /   ‾‾\
   /          \   |   (  |  (‾)  |
- / __________ \  |_|\_\  \_____/ 
+ / __________ \  |_|\_\  \_____/
 
 
      execution: local
@@ -16,52 +16,52 @@
 
 
 
-  █ THRESHOLDS 
+  █ THRESHOLDS
 
     http_req_duration{name:GetRedirectLink}
-    ✗ 'p(95)<100' p(95)=277.42ms
+    ✗ 'p(95)<100' p(95)=307.28ms
 
     http_req_duration{name:PostCreateLink}
-    ✓ 'p(95)<400' p(95)=353.82ms
+    ✓ 'p(95)<400' p(95)=335.57ms
 
     http_req_failed
-    ✓ 'rate<0.01' rate=0.12%
+    ✓ 'rate<0.01' rate=0.13%
 
 
-  █ TOTAL RESULTS 
+  █ TOTAL RESULTS
 
-    checks_total.......: 1257250 4190.186053/s
-    checks_succeeded...: 99.88%  1255761 out of 1257250
-    checks_failed......: 0.11%   1489 out of 1257250
+    checks_total.......: 1288744 4295.409314/s
+    checks_succeeded...: 99.86%  1286997 out of 1288744
+    checks_failed......: 0.13%   1747 out of 1288744
 
     ✗ POST link created (200)
-      ↳  99% — ✓ 418861 / ✗ 667
+      ↳  99% — ✓ 429401 / ✗ 541
     ✗ GET short link received (302)
-      ↳  99% — ✓ 418450 / ✗ 411
+      ↳  99% — ✓ 428798 / ✗ 603
     ✗ Redirect location is Google
-      ↳  99% — ✓ 418450 / ✗ 411
+      ↳  99% — ✓ 428798 / ✗ 603
 
     HTTP
-    http_req_duration..............: avg=183.88ms min=29.51ms  med=137.91ms max=30.25s   p(90)=308.68ms p(95)=334.01ms
-      { expected_response:true }...: avg=163.98ms min=29.51ms  med=137.76ms max=878.26ms p(90)=308.44ms p(95)=333.57ms
-      { name:GetRedirectLink }.....: avg=143.21ms min=29.51ms  med=106.03ms max=30.19s   p(90)=241.75ms p(95)=277.42ms
-      { name:PostCreateLink }......: avg=224.48ms min=33.67ms  med=204.34ms max=30.25s   p(90)=330.17ms p(95)=353.82ms
-    http_req_failed................: 0.12%  1078 out of 838389
-    http_reqs......................: 838389 2794.198365/s
+    http_req_duration..............: avg=178.21ms min=1.66ms  med=141.87ms max=30.49s   p(90)=292.54ms p(95)=324.03ms
+      { expected_response:true }...: avg=150.04ms min=1.66ms  med=141.68ms max=921.43ms p(90)=292.07ms p(95)=323.13ms
+      { name:GetRedirectLink }.....: avg=160.4ms  min=1.66ms  med=119.32ms max=30.49s   p(90)=267.75ms p(95)=307.28ms
+      { name:PostCreateLink }......: avg=195.99ms min=4.63ms  med=170.09ms max=30.26s   p(90)=305.55ms p(95)=335.57ms
+    http_req_failed................: 0.13%  1144 out of 859343
+    http_reqs......................: 859343 2864.207264/s
 
     EXECUTION
-    iteration_duration.............: avg=418.43ms min=119.06ms med=421.81ms max=30.47s   p(90)=527.26ms p(95)=559.14ms
-    iterations.....................: 419528 1398.210677/s
-    vus............................: 7      min=3              max=999 
+    iteration_duration.............: avg=408.27ms min=57.46ms med=363.2ms  max=30.89s   p(90)=582.28ms p(95)=634.23ms
+    iterations.....................: 429942 1433.005214/s
+    vus............................: 15     min=2              max=999
     vus_max........................: 1000   min=1000           max=1000
 
     NETWORK
-    data_received..................: 157 MB 522 kB/s
-    data_sent......................: 146 MB 488 kB/s
+    data_received..................: 161 MB 535 kB/s
+    data_sent......................: 149 MB 497 kB/s
 
 
 
 
-running (5m00.0s), 0000/1000 VUs, 419528 complete and 0 interrupted iterations
+running (5m00.0s), 0000/1000 VUs, 429942 complete and 0 interrupted iterations
 default ✓ [======================================] 0000/1000 VUs  5m0s
-ERRO[0300] thresholds on metrics 'http_req_duration{name:GetRedirectLink}' have been crossed 
+ERRO[0302] thresholds on metrics 'http_req_duration{name:GetRedirectLink}' have been crossed
